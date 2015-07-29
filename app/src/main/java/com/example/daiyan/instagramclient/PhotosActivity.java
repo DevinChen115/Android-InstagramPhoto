@@ -1,7 +1,8 @@
 package com.example.daiyan.instagramclient;
 
+import android.app.Activity;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ListView;
@@ -17,16 +18,19 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 
-public class PhotosActivity extends ActionBarActivity {
+public class PhotosActivity extends Activity {
 
     public static final String CLIENT_ID = "6a442dfcc68040d5a7d8bae1d3f164a5";
     private ArrayList<InstagramPhoto> photos;
     private InstagramPhotosAdapter aPhotos;
+    private SwipeRefreshLayout swipeContainer;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photos);
+
         // Send out api requests to popular photos
         photos = new ArrayList<>();
         // 1. Create the adapter linking it to the source
@@ -38,7 +42,21 @@ public class PhotosActivity extends ActionBarActivity {
         // Fetch the popular photos
         fechPopularPhotos();
 
-
+        swipeContainer = (SwipeRefreshLayout) findViewById(R.id.swipeContainer);
+        swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                // Your code to refresh the list here.
+                // Make sure you call swipeContainer.setRefreshing(false)
+                // once the network request has completed successfully.
+                fechPopularPhotos();
+            }
+        });
+        // Configure the refreshing colors
+        swipeContainer.setColorSchemeResources(android.R.color.holo_blue_bright,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light);
     }
 
     // Trigger api request
@@ -63,6 +81,7 @@ public class PhotosActivity extends ActionBarActivity {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 JSONArray photosJSON = null;
+                aPhotos.clear();
                 try {
                     photosJSON = response.getJSONArray("data");
 
@@ -75,6 +94,7 @@ public class PhotosActivity extends ActionBarActivity {
                         photo.imageHight = photoJSON.getJSONObject("images").getJSONObject("standard_resolution").getInt("height");
                         photo.likesCount = photoJSON.getJSONObject("likes").getInt("count");
                         photos.add(photo);
+                        swipeContainer.setRefreshing(false);
                     }
 
                 } catch (JSONException e){
